@@ -2,12 +2,10 @@
 import LuckyDrawGrand from '@/components/LuckyDrawGrand';
 import { Suspense } from 'react';
 
-async function GrandPage() {
+export default async function GrandPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <LuckyDrawGrand />
     </Suspense>
   );
 }
-
-export default GrandPage;
