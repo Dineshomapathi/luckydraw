@@ -1,16 +1,22 @@
-import { GetServerSidePropsContext } from 'next';
 import WinnersList from '@/components/WinnersList';
 import { Suspense } from 'react';
 
-type Params = {
+interface Params {
   round: string;
-};
+}
 
-function WinnersPage({ params }: { params: Params }) {
+interface Props {
+  params: Params;
+}
+
+async function WinnersPage({ params }: Props) {
+  // Ensure `params` is treated as an object and not a Promise
+  const { round } = params;
+
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <Suspense fallback={<div>Loading...</div>}>
-        <WinnersList round={params.round} />
+        <WinnersList round={round} />
       </Suspense>
     </div>
   );
