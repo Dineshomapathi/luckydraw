@@ -1,4 +1,3 @@
-// src/components/LuckyDrawGrand.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -77,7 +76,7 @@ const LuckyDrawGrand = () => {
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.code === 'Space' && !isDrawing && allNames.length > 0 && currentSpinNumber <= 10) {
+      if (event.code === 'Space' && !isDrawing && allNames.length > 0) {
         event.preventDefault();
         handleDraw();
       }
@@ -85,7 +84,7 @@ const LuckyDrawGrand = () => {
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [isDrawing, allNames, currentSpinNumber]);
+  }, [isDrawing, allNames]);
 
   const saveWinnerToDb = async (winner: string) => {
     const winnerData = [{
@@ -107,7 +106,7 @@ const LuckyDrawGrand = () => {
   };
 
   const handleDraw = () => {
-    if (isDrawing || currentSpinNumber > 10) return;
+    if (isDrawing) return;
     setIsDrawing(true);
     setShowConfetti(false);
     
