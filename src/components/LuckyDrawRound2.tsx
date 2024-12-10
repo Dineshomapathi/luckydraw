@@ -200,7 +200,7 @@ const LuckyDrawRound2 = () => {
                   name && (
                     <div 
                       key={index}
-                      className="text-2xl font-semibold text-black bg-white/80 p-3 rounded text-center animate-fade-in"
+                      className="text-4xl font-semibold text-black bg-white/80 p-3 rounded text-center animate-fade-in"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       {name}
