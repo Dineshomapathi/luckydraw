@@ -8,6 +8,13 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
+model Participant {
+  id        Int      @id @default(autoincrement())
+  name      String
+  excluded  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
 model Winner {
   id          Int      @id @default(autoincrement())
   name        String

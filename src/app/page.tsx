@@ -1,11 +1,18 @@
 // src/app/page.tsx
 import Link from 'next/link';
+import ExcelUpload from '@/components/ExcelUpload';
+import DatabaseManager from '@/components/DatabaseManager';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-8 text-center">Lucky Draw System</h1>
+        
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ExcelUpload />
+          <DatabaseManager />
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link href="/round1">

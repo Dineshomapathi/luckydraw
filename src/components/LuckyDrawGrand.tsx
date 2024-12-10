@@ -2,8 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import * as XLSX from 'xlsx';
-import { filterPreviousWinners, getPreviousWinners } from '@/lib/utils/winnerUtils';
+import { filterPreviousWinners } from '@/lib/utils/winnerUtils';
 import { Winner } from '@/lib/types';
 
 const LuckyDrawGrand = () => {
@@ -13,6 +12,25 @@ const LuckyDrawGrand = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [winners, setWinners] = useState<string[]>([]);
   const [currentSpinNumber, setCurrentSpinNumber] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadParticipants() {
+      try {
+        // Get participants excluding Round 1 and Round 2 winners
+        const response = await fetch('/api/participants?excludeWinners=true&rounds=round1,round2');
+        const data = await response.json();
+        const names = data.map((p: any) => p.name);
+        setAllNames(names);
+        setDisplayNames(getRandomNames(names, 5));
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading participants:', error);
+        setIsLoading(false);
+      }
+    }
+    loadParticipants();
+  }, []);
 
   // Confetti component
   const Confetti = () => (
@@ -40,30 +58,6 @@ const LuckyDrawGrand = () => {
       })}
     </div>
   );
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-
-    reader.onload = async (e) => {
-      const data = new Uint8Array(e.target?.result as ArrayBuffer);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-      const names = jsonData.slice(1).map((row: any) => row[0]).filter(Boolean);
-      
-      // Get both Round 1 and Round 2 winners and filter them out
-      const previousWinners = await getPreviousWinners(['round1', 'round2']);
-      const eligibleNames = filterPreviousWinners(names, previousWinners);
-      
-      setAllNames(eligibleNames);
-      setDisplayNames(getRandomNames(eligibleNames, 5));
-    };
-
-    reader.readAsArrayBuffer(file);
-  };
 
   const getRandomNames = (names: string[], count: number) => {
     const shuffled = [...names].sort(() => 0.5 - Math.random());
@@ -168,13 +162,10 @@ const LuckyDrawGrand = () => {
           backgroundRepeat: 'no-repeat'
         }}
       >
-        {allNames.length === 0 ? (
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileUpload}
-            className="absolute top-4 left-4 text-white"
-          />
+        {isLoading ? (
+          <div className="text-white text-2xl">Loading participants...</div>
+        ) : allNames.length === 0 ? (
+          <div className="text-white text-2xl">No eligible participants available.</div>
         ) : (
           <div className="relative">
             <div className="flex flex-col items-center justify-center h-[400px] overflow-hidden">
@@ -196,23 +187,6 @@ const LuckyDrawGrand = () => {
                 ))}
               </div>
             </div>
-
-            <div className="absolute top-4 right-4 text-white text-lg">
-              Grand Draw - Spin {currentSpinNumber}/10
-            </div>
-
-            {winners.length > 0 && (
-              <div className="absolute bottom-4 left-4 right-4 bg-white/80 p-4 rounded">
-                <h3 className="text-xl font-bold mb-2">Previous Winners:</h3>
-                <div className="grid grid-cols-5 gap-2">
-                  {winners.map((winner, index) => (
-                    <div key={index} className="text-sm bg-white/90 p-2 rounded">
-                      #{index + 1} {winner}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

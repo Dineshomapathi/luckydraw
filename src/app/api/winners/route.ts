@@ -7,9 +7,28 @@ import { Winner } from '@/lib/types';
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    await prisma.winner.createMany({
-      data: data.winners
+    
+    // Use transaction to update both winners and participants
+    await prisma.$transaction(async (tx) => {
+      // Add winners
+      await tx.winner.createMany({
+        data: data.winners
+      });
+
+      // Update participant status to excluded
+      const winnerNames = data.winners.map((w: any) => w.name);
+      await tx.participant.updateMany({
+        where: {
+          name: {
+            in: winnerNames
+          }
+        },
+        data: {
+          excluded: true
+        }
+      });
     });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error saving winners:', error);
