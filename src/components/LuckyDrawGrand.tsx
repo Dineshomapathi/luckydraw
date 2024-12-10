@@ -1,0 +1,223 @@
+// src/components/LuckyDrawGrand.tsx
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
+import { filterPreviousWinners, getPreviousWinners } from '@/lib/utils/winnerUtils';
+import { Winner } from '@/lib/types';
+
+const LuckyDrawGrand = () => {
+  const [allNames, setAllNames] = useState<string[]>([]);
+  const [displayNames, setDisplayNames] = useState<string[]>([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [winners, setWinners] = useState<string[]>([]);
+  const [currentSpinNumber, setCurrentSpinNumber] = useState(1);
+
+  // Confetti component
+  const Confetti = () => (
+    <div className="fixed inset-0 pointer-events-none z-50">
+      {Array.from({ length: 150 }).map((_, i) => {
+        const size = Math.random() * 10 + 5;
+        return (
+          <div
+            key={i}
+            className="absolute animate-confetti-fall"
+            style={{
+              left: `${Math.random() * 100}vw`,
+              top: '-20px',
+              width: `${size}px`,
+              height: `${size}px`,
+              backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'][
+                Math.floor(Math.random() * 6)
+              ],
+              borderRadius: '50%',
+              animationDuration: `${Math.random() * 2 + 2}s`,
+              animationDelay: `${Math.random() * 1.5}s`
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      const names = jsonData.slice(1).map((row: any) => row[0]).filter(Boolean);
+      
+      // Get both Round 1 and Round 2 winners and filter them out
+      const previousWinners = await getPreviousWinners(['round1', 'round2']);
+      const eligibleNames = filterPreviousWinners(names, previousWinners);
+      
+      setAllNames(eligibleNames);
+      setDisplayNames(getRandomNames(eligibleNames, 5));
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
+  const getRandomNames = (names: string[], count: number) => {
+    const shuffled = [...names].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  };
+
+  const getOpacityStyle = (index: number) => {
+    switch (index) {
+      case 0: return 'opacity-30';
+      case 1: return 'opacity-65';
+      case 2: return 'opacity-100';
+      case 3: return 'opacity-65';
+      case 4: return 'opacity-30';
+      default: return 'opacity-100';
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.code === 'Space' && !isDrawing && allNames.length > 0 && currentSpinNumber <= 10) {
+        event.preventDefault();
+        handleDraw();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [isDrawing, allNames, currentSpinNumber]);
+
+  const saveWinnerToDb = async (winner: string) => {
+    const winnerData = [{
+      name: winner,
+      round: 'grand',
+      spinNumber: currentSpinNumber,
+      orderNumber: winners.length + 1
+    }];
+
+    try {
+      await fetch('/api/winners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ winners: winnerData })
+      });
+    } catch (error) {
+      console.error('Error saving winner:', error);
+    }
+  };
+
+  const handleDraw = () => {
+    if (isDrawing || currentSpinNumber > 10) return;
+    setIsDrawing(true);
+    setShowConfetti(false);
+    
+    let counter = 0;
+    const animationDuration = 6000;
+    const interval = 100;
+    const iterations = animationDuration / interval;
+    
+    const drawInterval = setInterval(() => {
+      setDisplayNames(prev => {
+        const newNames = [...prev.slice(1), allNames[Math.floor(Math.random() * allNames.length)]];
+        while (newNames.length < 5) {
+          newNames.push(allNames[Math.floor(Math.random() * allNames.length)]);
+        }
+        return newNames;
+      });
+      
+      counter++;
+      if (counter >= iterations) {
+        clearInterval(drawInterval);
+        
+        // Get single winner
+        const availableNames = filterPreviousWinners(allNames, winners);
+        const winner = availableNames[Math.floor(Math.random() * availableNames.length)];
+        
+        // Set final display with winner in center
+        const finalNames = [
+          ...getRandomNames(availableNames, 2),
+          winner,
+          ...getRandomNames(availableNames, 2)
+        ];
+        setDisplayNames(finalNames);
+        setWinners(prev => [...prev, winner]);
+        saveWinnerToDb(winner);
+        setCurrentSpinNumber(prev => prev + 1);
+        setIsDrawing(false);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
+      }
+    }, interval);
+  };
+
+  return (
+    <div className="relative h-screen w-screen">
+      {showConfetti && <Confetti />}
+      <div 
+        className="relative h-full w-full flex flex-col items-center justify-center"
+        style={{
+          backgroundImage: "url('/gld.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {allNames.length === 0 ? (
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileUpload}
+            className="absolute top-4 left-4 text-white"
+          />
+        ) : (
+          <div className="relative">
+            <div className="flex flex-col items-center justify-center h-[400px] overflow-hidden">
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+                             w-[1000px] h-[80px] border-4 border-white rounded-lg flex items-center justify-center z-10" />
+              
+              <div className={`flex flex-col items-center transition-transform duration-100 
+                ${isDrawing ? 'animate-slot-spin' : ''}`}>
+                {displayNames.map((name, index) => (
+                  <div 
+                    key={index}
+                    className={`h-[80px] flex items-center justify-center
+                      ${index === 2 ? 'text-5xl font-bold' : 'text-4xl'} 
+                      ${getOpacityStyle(index)}
+                      text-black transition-all duration-200`}
+                  >
+                    {name}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="absolute top-4 right-4 text-white text-lg">
+              Grand Draw - Spin {currentSpinNumber}/10
+            </div>
+
+            {winners.length > 0 && (
+              <div className="absolute bottom-4 left-4 right-4 bg-white/80 p-4 rounded">
+                <h3 className="text-xl font-bold mb-2">Previous Winners:</h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {winners.map((winner, index) => (
+                    <div key={index} className="text-sm bg-white/90 p-2 rounded">
+                      #{index + 1} {winner}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LuckyDrawGrand;
