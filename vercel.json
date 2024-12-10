@@ -1,0 +1,7 @@
+{
+    "buildCommand": "npm run vercel-build",
+    "env": {
+      "POSTGRES_PRISMA_URL": "postgres://neondb_owner:at5JflscX6WZ@ep-blue-bread-a5aju4e4-pooler.us-east-2.aws.neon.tech/neondb?pgbouncer=true&connect_timeout=15&sslmode=require",
+      "POSTGRES_URL_NON_POOLING": "postgres://neondb_owner:at5JflscX6WZ@ep-blue-bread-a5aju4e4.us-east-2.aws.neon.tech/neondb?sslmode=require"
+    }
+  }
