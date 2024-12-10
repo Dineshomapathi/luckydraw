@@ -2,14 +2,13 @@
 import WinnersList from '@/components/WinnersList';
 import { Suspense } from 'react';
 
-interface PageProps {
+interface Props {
   params: {
     round: string;
   };
-  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default function WinnersPage({ params }: PageProps) {
+async function WinnersPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <Suspense fallback={<div>Loading...</div>}>
@@ -19,12 +18,4 @@ export default function WinnersPage({ params }: PageProps) {
   );
 }
 
-// To improve type safety, add this
-export async function generateStaticParams() {
-  return [
-    { round: 'round1' },
-    { round: 'round2' },
-    { round: 'grand' },
-    { round: 'all' },
-  ];
-}
+export default WinnersPage;
