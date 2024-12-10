@@ -1,14 +1,12 @@
-// src/app/winners/[round]/page.tsx
+import { GetServerSidePropsContext } from 'next';
 import WinnersList from '@/components/WinnersList';
 import { Suspense } from 'react';
 
-interface Props {
-  params: {
-    round: string;
-  };
-}
+type Params = {
+  round: string;
+};
 
-async function WinnersPage({ params }: Props) {
+function WinnersPage({ params }: { params: Params }) {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <Suspense fallback={<div>Loading...</div>}>
