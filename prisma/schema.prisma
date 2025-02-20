@@ -9,18 +9,17 @@ datasource db {
 }
 
 model Participant {
-  id        Int      @id @default(autoincrement())
-  name      String
-  excluded  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  employeeId  String   @unique
+  excluded    Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }
 
 model Winner {
   id          Int      @id @default(autoincrement())
-  name        String
-  round       String   // 'round1', 'round2', 'grand'
-  spinNumber  Int
-  orderNumber Int
+  employeeId  String
+  round       String   // 'draw1', 'draw2', 'draw3', 'draw4'
+  drawNumber  Int      // 1-10 for each round
   timestamp   DateTime @default(now())
 
   @@index([round])

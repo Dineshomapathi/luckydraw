@@ -5,8 +5,8 @@ import { filterPreviousWinners } from '@/lib/utils/winnerUtils';
 import { Winner } from '@/lib/types';
 
 const LuckyDrawGrand = () => {
-  const [allNames, setAllNames] = useState<string[]>([]);
-  const [displayNames, setDisplayNames] = useState<string[]>([]);
+  const [allIds, setAllIds] = useState<string[]>([]);
+  const [displayIds, setDisplayIds] = useState<string[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [winners, setWinners] = useState<string[]>([]);
@@ -16,12 +16,12 @@ const LuckyDrawGrand = () => {
   useEffect(() => {
     async function loadParticipants() {
       try {
-        // Get participants excluding Round 1 and Round 2 winners
-        const response = await fetch('/api/participants?excludeWinners=true&rounds=round1,round2');
+        // Get participants excluding previous winners
+        const response = await fetch('/api/participants');
         const data = await response.json();
-        const names = data.map((p: any) => p.name);
-        setAllNames(names);
-        setDisplayNames(getRandomNames(names, 5));
+        const ids = data.map((p: any) => p.employeeId);
+        setAllIds(ids);
+        setDisplayIds(getRandomIds(ids, 5));
         setIsLoading(false);
       } catch (error) {
         console.error('Error loading participants:', error);
@@ -58,8 +58,8 @@ const LuckyDrawGrand = () => {
     </div>
   );
 
-  const getRandomNames = (names: string[], count: number) => {
-    const shuffled = [...names].sort(() => 0.5 - Math.random());
+  const getRandomIds = (ids: string[], count: number) => {
+    const shuffled = [...ids].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);
   };
 
@@ -76,7 +76,7 @@ const LuckyDrawGrand = () => {
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.code === 'Space' && !isDrawing && allNames.length > 0) {
+      if (event.code === 'Space' && !isDrawing && allIds.length > 0 && currentSpinNumber <= 10) {
         event.preventDefault();
         handleDraw();
       }
@@ -84,14 +84,13 @@ const LuckyDrawGrand = () => {
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [isDrawing, allNames]);
+  }, [isDrawing, allIds, currentSpinNumber]);
 
-  const saveWinnerToDb = async (winner: string) => {
+  const saveWinnerToDb = async (employeeId: string) => {
     const winnerData = [{
-      name: winner,
-      round: 'grand',
-      spinNumber: currentSpinNumber,
-      orderNumber: winners.length + 1
+      employeeId: employeeId,
+      round: 'draw1',
+      drawNumber: currentSpinNumber
     }];
 
     try {
@@ -106,7 +105,7 @@ const LuckyDrawGrand = () => {
   };
 
   const handleDraw = () => {
-    if (isDrawing) return;
+    if (isDrawing || currentSpinNumber > 10) return;
     setIsDrawing(true);
     setShowConfetti(false);
     
@@ -116,12 +115,12 @@ const LuckyDrawGrand = () => {
     const iterations = animationDuration / interval;
     
     const drawInterval = setInterval(() => {
-      setDisplayNames(prev => {
-        const newNames = [...prev.slice(1), allNames[Math.floor(Math.random() * allNames.length)]];
-        while (newNames.length < 5) {
-          newNames.push(allNames[Math.floor(Math.random() * allNames.length)]);
+      setDisplayIds(prev => {
+        const newIds = [...prev.slice(1), allIds[Math.floor(Math.random() * allIds.length)]];
+        while (newIds.length < 5) {
+          newIds.push(allIds[Math.floor(Math.random() * allIds.length)]);
         }
-        return newNames;
+        return newIds;
       });
       
       counter++;
@@ -129,16 +128,16 @@ const LuckyDrawGrand = () => {
         clearInterval(drawInterval);
         
         // Get single winner
-        const availableNames = filterPreviousWinners(allNames, winners);
-        const winner = availableNames[Math.floor(Math.random() * availableNames.length)];
+        const availableIds = filterPreviousWinners(allIds, winners);
+        const winner = availableIds[Math.floor(Math.random() * availableIds.length)];
         
         // Set final display with winner in center
-        const finalNames = [
-          ...getRandomNames(availableNames, 2),
+        const finalIds = [
+          ...getRandomIds(availableIds, 2),
           winner,
-          ...getRandomNames(availableNames, 2)
+          ...getRandomIds(availableIds, 2)
         ];
-        setDisplayNames(finalNames);
+        setDisplayIds(finalIds);
         setWinners(prev => [...prev, winner]);
         saveWinnerToDb(winner);
         setCurrentSpinNumber(prev => prev + 1);
@@ -155,7 +154,7 @@ const LuckyDrawGrand = () => {
       <div 
         className="relative h-full w-full flex flex-col items-center justify-center"
         style={{
-          backgroundImage: "url('/gld.png')",
+          backgroundImage: "url('/lr1.jpeg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
@@ -163,25 +162,31 @@ const LuckyDrawGrand = () => {
       >
         {isLoading ? (
           <div className="text-white text-2xl">Loading participants...</div>
-        ) : allNames.length === 0 ? (
+        ) : allIds.length === 0 ? (
           <div className="text-white text-2xl">No eligible participants available.</div>
         ) : (
           <div className="relative">
+            {/* <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-white mb-4">Lucky Draw</h1>
+              <div className="text-2xl text-black">Draw {currentSpinNumber}/10</div>
+            </div> */}
+            
             <div className="flex flex-col items-center justify-center h-[400px] overflow-hidden">
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
-                             w-[1000px] h-[80px] border-4 border-white rounded-lg flex items-center justify-center z-10" />
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+                w-[900px] h-[80px] border-4 border-white rounded-lg flex items-center justify-center z-10 ml-[-10px]" />
+
               
               <div className={`flex flex-col items-center transition-transform duration-100 
                 ${isDrawing ? 'animate-slot-spin' : ''}`}>
-                {displayNames.map((name, index) => (
+                {displayIds.map((id, index) => (
                   <div 
                     key={index}
                     className={`h-[80px] flex items-center justify-center
-                      ${index === 2 ? 'text-5xl font-bold' : 'text-4xl'} 
+                      ${index === 2 ? 'text-7xl font-bold' : 'text-6xl'} 
                       ${getOpacityStyle(index)}
-                      text-black transition-all duration-200`}
+                      text-[#001F3F] transition-all duration-200`}
                   >
-                    {name}
+                    {id}
                   </div>
                 ))}
               </div>

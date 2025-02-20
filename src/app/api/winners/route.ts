@@ -16,11 +16,11 @@ export async function POST(req: Request) {
       });
 
       // Update participant status to excluded
-      const winnerNames = data.winners.map((w: any) => w.name);
+      const winnerIds = data.winners.map((w: any) => w.employeeId);
       await tx.participant.updateMany({
         where: {
-          name: {
-            in: winnerNames
+          employeeId: {
+            in: winnerIds
           }
         },
         data: {
@@ -47,30 +47,44 @@ export async function GET(req: Request) {
     if (rounds) {
       winners = await prisma.winner.findMany({
         where: { round: { in: rounds } },
-        orderBy: [{ round: 'asc' }, { orderNumber: 'asc' }]
+        orderBy: [
+          { round: 'asc' },
+          { drawNumber: 'asc' }
+        ]
       });
     } else if (round && round !== 'all') {
       winners = await prisma.winner.findMany({
         where: { round },
-        orderBy: { orderNumber: 'asc' }
+        orderBy: { drawNumber: 'asc' }
       });
     } else {
       winners = await prisma.winner.findMany({
-        orderBy: [{ round: 'asc' }, { orderNumber: 'asc' }]
+        orderBy: [
+          { round: 'asc' },
+          { drawNumber: 'asc' }
+        ]
       });
     }
 
     if (download === 'true') {
       const formattedWinners = winners.map(w => ({
-        Round: w.round === 'grand' ? 'Grand Draw' : `Round ${w.round.slice(-1)}`,
-        'Spin Number': w.spinNumber,
-        'Winner Number': w.orderNumber,
-        Name: w.name,
+        'Lucky Draw': w.round,
+        'Draw Number': w.drawNumber,
+        'Employee ID': w.employeeId,
         'Draw Time': new Date(w.timestamp).toLocaleString()
       }));
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(formattedWinners);
+
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 15 }, // Lucky Draw
+        { wch: 12 }, // Draw Number
+        { wch: 15 }, // Employee ID
+        { wch: 20 }  // Draw Time
+      ];
+      
       XLSX.utils.book_append_sheet(wb, ws, 'Winners');
       const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
       

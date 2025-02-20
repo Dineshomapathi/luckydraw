@@ -1,11 +1,10 @@
 // src/lib/types.ts
 export interface Winner {
-    id?: number;
-    name: string;
-    round: string; // 'round1', 'round2', 'grand'
-    spinNumber: number;
-    orderNumber: number;
-    timestamp?: Date;
-  }
-  
-  export type Round = 'round1' | 'round2' | 'grand';
+  id?: number;
+  employeeId: string;
+  round: string; // 'draw1', 'draw2', 'draw3', 'draw4'
+  drawNumber: number;
+  timestamp?: Date;
+}
+
+export type Round = 'draw1' | 'draw2' | 'draw3' | 'draw4';
